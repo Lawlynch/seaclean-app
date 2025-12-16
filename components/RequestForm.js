@@ -40,12 +40,16 @@ export default function RequestForm() {
     <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow border border-gray-200">
       <h2 className="text-2xl font-bold text-blue-900">Request Service</h2>
       
-      <div>
+<div>
         <label className="block text-sm font-medium mb-1">Service Type</label>
+        {/* These values MUST match your Airtable 'Service Type' options exactly */}
         <select name="serviceType" className="w-full p-2 border rounded" required>
-          <option>Deep Clean</option>
-          <option>Window Cleaning</option>
-          <option>Supplies Restock</option>
+          <option value="Plumbing">Plumbing</option>
+          <option value="HVAC">HVAC</option>
+          <option value="Carpentry">Carpentry</option>
+          <option value="IT Support">IT Support</option>
+          <option value="Pest Control">Pest Control</option>
+          <option value="General Maintenance">General Maintenance</option>
         </select>
       </div>
 
