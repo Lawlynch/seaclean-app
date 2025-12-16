@@ -3,19 +3,30 @@ import { base } from '@/lib/airtable';
 
 export async function GET() {
   try {
-    // Get all users who have the role 'Staff'
     const records = await base('Users').select({
-      filterByFormula: `{Role} = 'Staff'`,
-      fields: ['Email'] // We'll use Email or Name as the label
+      view: 'Grid view',
+      // CRITICAL: This forces Linked Records (like Sites) to return Names ("London"), not IDs ("rec...")
+      cellFormat: 'string', 
+      userLocale: 'en-gb',
+      timeZone: 'UTC'
     }).all();
 
-    const staff = records.map(r => ({
-      id: r.id,
-      name: r.fields['Email'] // Or use a 'Name' field if you have one
-    }));
+    const staff = records
+      .filter(r => {
+        const role = r.fields['Role'];
+        return role === 'Staff' || role === 'Admin' || role === 'Moderator';
+      })
+      .map(r => ({
+        id: r.id,
+        email: r.fields['Email'],
+        role: r.fields['Role'],
+        // Returns an array of site names: ['Riverside Pump Station', 'Central Park']
+        sites: r.fields['Sites'] || [] 
+      }));
 
     return NextResponse.json({ staff });
   } catch (error) {
+    console.error('Staff Fetch Error:', error);
     return NextResponse.json({ error: 'Failed to fetch staff' }, { status: 500 });
   }
 }
