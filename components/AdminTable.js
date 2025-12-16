@@ -110,12 +110,11 @@ export default function AdminTable({ initialRequests = [] }) {
                       <option value="">Unassigned</option>
                       {staffList
                         .filter(staff => {
-                           // 1. Admins/Moderators can be assigned anywhere
                            if (staff.role === 'Admin' || staff.role === 'Moderator') return true;
                            
-                           // 2. Staff must be assigned to this specific Site Name
-                           // req.location is "Riverside Pump Station"
-                           // staff.sites is ["Riverside Pump Station", "Other Site"]
+                           // Debug Log (Open your browser Console F12 to see this)
+                           // console.log(`Checking ${staff.email}:`, staff.sites, "vs Request:", req.location);
+                           
                            return staff.sites && staff.sites.includes(req.location);
                         })
                         .map(staff => (

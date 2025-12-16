@@ -5,7 +5,6 @@ export async function GET() {
   try {
     const records = await base('Users').select({
       view: 'Grid view',
-      // CRITICAL: This forces Linked Records (like Sites) to return Names ("London"), not IDs ("rec...")
       cellFormat: 'string', 
       userLocale: 'en-gb',
       timeZone: 'UTC'
@@ -16,13 +15,19 @@ export async function GET() {
         const role = r.fields['Role'];
         return role === 'Staff' || role === 'Admin' || role === 'Moderator';
       })
-      .map(r => ({
-        id: r.id,
-        email: r.fields['Email'],
-        role: r.fields['Role'],
-        // Returns an array of site names: ['Riverside Pump Station', 'Central Park']
-        sites: r.fields['Sites'] || [] 
-      }));
+      .map(r => {
+        // Flatten the Sites array just in case Airtable sends it weirdly
+        // If it's already an array of strings, keep it. If it's undefined, make it empty.
+        const rawSites = r.fields['Sites'];
+        const sites = Array.isArray(rawSites) ? rawSites : (rawSites ? [rawSites] : []);
+
+        return {
+          id: r.id,
+          email: r.fields['Email'],
+          role: r.fields['Role'],
+          sites: sites
+        };
+      });
 
     return NextResponse.json({ staff });
   } catch (error) {

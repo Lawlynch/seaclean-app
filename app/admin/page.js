@@ -5,7 +5,7 @@ async function getRequests() {
   try {
     const records = await base('Service Requests').select({
       sort: [{ field: 'Preferred Date', direction: 'desc' }],
-      cellFormat: 'string', // Keeps names readable (e.g. "Main Office" instead of "rec123")
+      cellFormat: 'string', 
       timeZone: 'UTC',
       userLocale: 'en-gb'
     }).all();
@@ -16,14 +16,20 @@ async function getRequests() {
       return {
         id: record.id,
         serviceType: fields['Service Type'] || 'General',
-        location: fields['Location'] || 'Unknown', 
+        
+        // CRITICAL FIX: Flatten the Array to a simple String
+        // Before: ['Maplewood Elementary']  ->  After: 'Maplewood Elementary'
+        location: Array.isArray(fields['Location']) ? fields['Location'][0] : (fields['Location'] || 'Unknown'),
+        
         status: fields['Status'] || 'New Request',
         date: fields['Preferred Date'] || 'N/A',
         urgency: fields['Urgency'] || 'Normal',
         description: fields['Description'] || '',
-        requestedBy: fields['Requested By'] || 'Guest',
-        // NEW: Fetch the assigned staff name (if any)
-        assignedToName: fields['Assigned Staff'] || '' 
+        
+        // Flatten Requested By as well
+        requestedBy: Array.isArray(fields['Requested By']) ? fields['Requested By'][0] : (fields['Requested By'] || 'Guest'),
+        
+        assignedToName: Array.isArray(fields['Assigned Staff']) ? fields['Assigned Staff'][0] : (fields['Assigned Staff'] || '')
       };
     });
   } catch (error) {
@@ -38,7 +44,6 @@ export default async function AdminDashboard() {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header with Logout */}
         <div className="flex justify-between items-end mb-8">
           <div>
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">Manager Dashboard</h1>
