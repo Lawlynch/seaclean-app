@@ -103,18 +103,27 @@ export default function AdminTable({ initialRequests = [] }) {
                 {/* ALWAYS VISIBLE DROPDOWN */}
                 <td className="p-4">
                   <select 
-                    className="p-2 border rounded text-sm bg-white w-48 focus:ring-2 focus:ring-blue-500 outline-none"
-                    // We attempt to match the name to an ID to set the default value
-                    value={getStaffIdByName(req.assignedToName)}
-                    onChange={(e) => handleAssign(req.id, e.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {staffList.map(staff => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.email}
-                      </option>
-                    ))}
-                  </select>
+                      className="p-2 border rounded text-sm bg-white w-48 focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={getStaffIdByName(req.assignedToName)}
+                      onChange={(e) => handleAssign(req.id, e.target.value)}
+                    >
+                      <option value="">Unassigned</option>
+                      {staffList
+                        .filter(staff => {
+                           // 1. Admins/Moderators can be assigned anywhere
+                           if (staff.role === 'Admin' || staff.role === 'Moderator') return true;
+                           
+                           // 2. Staff must be assigned to this specific Site Name
+                           // req.location is "Riverside Pump Station"
+                           // staff.sites is ["Riverside Pump Station", "Other Site"]
+                           return staff.sites && staff.sites.includes(req.location);
+                        })
+                        .map(staff => (
+                          <option key={staff.id} value={staff.id}>
+                            {staff.email}
+                          </option>
+                      ))}
+                    </select>
                 </td>
 
                 <td className="p-4">
