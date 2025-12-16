@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { base } from '@/lib/airtable';
-import { cookies } from 'next/headers'; // <--- IMPORTANT IMPORT
+import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
     const { email, password } = await request.json();
 
-    // 1. Find User
     const records = await base('Users').select({
       filterByFormula: `{Email} = '${email}'`,
       maxRecords: 1
@@ -18,7 +17,6 @@ export async function POST(request) {
 
     const user = records[0];
 
-    // 2. Check Password
     if (user.fields['Password'] !== password) {
       return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
     }
@@ -26,20 +24,17 @@ export async function POST(request) {
     const userRole = user.fields['Role'] || 'User';
     const allowedSiteIds = user.fields['Sites'] || [];
 
-    // 3. SET COOKIE (The "Badge")
-    // This allows the middleware to see the role on other pages
-    cookies().set('user_role', userRole, { 
-      httpOnly: true, 
-      path: '/',
-      maxAge: 60 * 60 * 24 // 1 day
-    });
+    // --- THIS IS THE FIX ---
+    // Make sure BOTH of these lines exist!
+    cookies().set('user_role', userRole, { httpOnly: true, path: '/', maxAge: 86400 });
+    cookies().set('user_id', user.id, { httpOnly: true, path: '/', maxAge: 86400 }); 
+    // -----------------------
 
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.fields['Email'],
-        name: user.fields['Email'],
         role: userRole,
         allowedSites: allowedSiteIds
       }

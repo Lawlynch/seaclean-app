@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import RequestForm from '@/components/RequestForm';
 
 export default function Home() {
@@ -9,6 +10,8 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const router = useRouter(); // Required for redirecting
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -25,7 +28,15 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok) {
-        setUser(data.user); // Login Success! Switch to Form.
+        setUser(data.user); // Login Success!
+        
+        // --- AUTO REDIRECT LOGIC ---
+        if (data.user.role === 'Admin') {
+          router.push('/admin');
+        } else if (data.user.role === 'Staff') {
+          router.push('/staff');
+        }
+        // Clients stay here to see the form
       } else {
         setError(data.error || 'Invalid credentials');
       }
@@ -49,14 +60,14 @@ export default function Home() {
              {/* Pass the User data to the form so it knows who is asking */}
             <RequestForm user={user} />
             <button 
-              onClick={() => setUser(null)} 
+              onClick={() => { setUser(null); setEmail(''); setPassword(''); }} 
               className="mt-6 text-sm text-gray-400 hover:text-gray-600 underline w-full text-center"
             >
               Log Out
             </button>
           </div>
         ) : (
-<form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-lg border border-gray-100">
+          <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-lg border border-gray-100">
             <h2 className="text-xl font-bold text-gray-800 mb-6">Client Login</h2>
             
             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded">{error}</div>}
@@ -82,8 +93,8 @@ export default function Home() {
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" 
                   required 
                 />
-                {/* NEW: Forgot Password Link */}
-                <div className="text-right mt-1">
+                 {/* Forgot Password Link */}
+                 <div className="text-right mt-1">
                   <a 
                     href={`mailto:portal@seaclean.com?subject=Password Reset Request&body=Hello Admin,%0D%0A%0D%0APlease reset the password for my account associated with this email address.`}
                     className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
