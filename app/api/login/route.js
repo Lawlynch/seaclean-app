@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { base } from '@/lib/airtable';
+import { cookies } from 'next/headers'; // <--- NEW IMPORT
 
 export async function POST(request) {
   try {
     const { email, password } = await request.json();
 
-    // 1. Search for the user by Email
+    // 1. Find User
     const records = await base('Users').select({
       filterByFormula: `{Email} = '${email}'`,
       maxRecords: 1
@@ -17,22 +18,29 @@ export async function POST(request) {
 
     const user = records[0];
 
-    // 2. Simple Password Check (Direct comparison)
-    // Note: In a real production app, we would hash passwords, but this works for your internal tool.
+    // 2. Check Password
     if (user.fields['Password'] !== password) {
       return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
     }
 
-    // 3. Get the list of Site IDs this user is allowed to see
+    const userRole = user.fields['Role'] || 'User';
     const allowedSiteIds = user.fields['Sites'] || [];
+
+    // 3. SET COOKIE (The "Badge")
+    // This saves the role in the browser so we can check it on other pages
+    cookies().set('user_role', userRole, { 
+      httpOnly: true, 
+      path: '/',
+      maxAge: 60 * 60 * 24 // 1 day
+    });
 
     return NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.fields['Email'],
-        name: user.fields['Email'], // Or 'Name' column if you have one
-        role: user.fields['Role'],
+        name: user.fields['Email'],
+        role: userRole,
         allowedSites: allowedSiteIds
       }
     });
