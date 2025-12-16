@@ -56,7 +56,7 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-lg border border-gray-100">
+<form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow-lg border border-gray-100">
             <h2 className="text-xl font-bold text-gray-800 mb-6">Client Login</h2>
             
             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded">{error}</div>}
@@ -82,6 +82,15 @@ export default function Home() {
                   className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" 
                   required 
                 />
+                {/* NEW: Forgot Password Link */}
+                <div className="text-right mt-1">
+                  <a 
+                    href={`mailto:portal@seaclean.com?subject=Password Reset Request&body=Hello Admin,%0D%0A%0D%0APlease reset the password for my account associated with this email address.`}
+                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Forgot Password?
+                  </a>
+                </div>
               </div>
 
               <button 
