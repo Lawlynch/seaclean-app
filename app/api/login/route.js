@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { base } from '@/lib/airtable';
-import { cookies } from 'next/headers'; // <--- NEW IMPORT
+import { cookies } from 'next/headers'; // <--- IMPORTANT IMPORT
 
 export async function POST(request) {
   try {
@@ -27,7 +27,7 @@ export async function POST(request) {
     const allowedSiteIds = user.fields['Sites'] || [];
 
     // 3. SET COOKIE (The "Badge")
-    // This saves the role in the browser so we can check it on other pages
+    // This allows the middleware to see the role on other pages
     cookies().set('user_role', userRole, { 
       httpOnly: true, 
       path: '/',

@@ -35,28 +35,24 @@ export async function POST(request) {
   }
 }
 
-// 2. PUT: Update status (Used by the Admin Dashboard)
+// 2. PUT: Update status AND assignment
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, assignedTo } = body; // <--- Accept assignedTo
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
+    const updateData = { 'Status': status };
+    
+    // If an assignment was sent, add it to the update
+    if (assignedTo) {
+      updateData['Assigned Staff'] = [assignedTo]; // Linked records need an array
     }
 
-    await base('Service Requests').update([
-      {
-        id: id,
-        fields: {
-          'Status': status
-        }
-      }
-    ]);
+    await base('Service Requests').update([{ id, fields: updateData }]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Airtable Update Error:', error);
+    console.error('Update Error:', error);
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
