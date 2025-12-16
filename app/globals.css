@@ -24,4 +24,17 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+/* Force all dropdowns to have dark text on white background */
+select {
+  color: #111827; /* Dark Gray */
+  background-color: #ffffff; /* White */
+}
+
+/* Ensure options inside the dropdown are also readable */
+option {
+  color: #111827;
+  background-color: #ffffff;
+}
+
 }

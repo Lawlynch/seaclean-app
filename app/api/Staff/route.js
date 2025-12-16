@@ -3,31 +3,18 @@ import { base } from '@/lib/airtable';
 
 export async function GET() {
   try {
-    const records = await base('Users').select({
+    // 1. Target the "Staff" table (where Jessica & Michael live)
+    const records = await base('Staff').select({
       view: 'Grid view',
-      cellFormat: 'string', 
-      userLocale: 'en-gb',
-      timeZone: 'UTC'
+      // We don't need to filter by Role because EVERYONE in this table is Staff!
     }).all();
 
-    const staff = records
-      .filter(r => {
-        const role = r.fields['Role'];
-        return role === 'Staff' || role === 'Admin' || role === 'Moderator';
-      })
-      .map(r => {
-        // Flatten the Sites array just in case Airtable sends it weirdly
-        // If it's already an array of strings, keep it. If it's undefined, make it empty.
-        const rawSites = r.fields['Sites'];
-        const sites = Array.isArray(rawSites) ? rawSites : (rawSites ? [rawSites] : []);
-
-        return {
-          id: r.id,
-          email: r.fields['Email'],
-          role: r.fields['Role'],
-          sites: sites
-        };
-      });
+    const staff = records.map(r => ({
+      id: r.id,
+      // 2. Map the correct field name: "Full Name" (from your screenshot)
+      email: r.fields['Full Name'] || r.fields['Email'], 
+      role: 'Staff' // We force this role since they are in the Staff table
+    }));
 
     return NextResponse.json({ staff });
   } catch (error) {
