@@ -6,28 +6,31 @@ export default function AdminTable({ initialRequests = [] }) {
   const [requests, setRequests] = useState(initialRequests);
   const [staffList, setStaffList] = useState([]);
 
-  // 1. Fetch Staff List for the dropdowns
+  // 1. Fetch Staff List
   useEffect(() => {
     fetch('/api/users/staff')
       .then(res => res.json())
       .then(data => {
-        if (data.staff) setStaffList(data.staff);
+        if (data.staff) {
+          // Sort staff alphabetically so they are easy to find in the list
+          const sortedStaff = data.staff.sort((a, b) => 
+            (a.email || '').localeCompare(b.email || '')
+          );
+          setStaffList(sortedStaff);
+        }
       });
   }, []);
 
-  // 2. Helper to find Staff ID by Name (since we fetched Names in the main page)
   function getStaffIdByName(name) {
     const staff = staffList.find(s => s.email === name || s.name === name);
     return staff ? staff.id : "";
   }
 
-  // 3. Handle Assignment Change (Instant Save)
   async function handleAssign(requestId, newStaffId) {
-    // Optimistic Update: Update UI immediately
+    // Optimistic Update
     setRequests(current => 
       current.map(req => {
         if (req.id === requestId) {
-          // Find the name of the staff we just picked to update the UI correctly
           const selectedStaff = staffList.find(s => s.id === newStaffId);
           return { ...req, assignedToName: selectedStaff ? selectedStaff.email : '' };
         }
@@ -35,14 +38,12 @@ export default function AdminTable({ initialRequests = [] }) {
       })
     );
 
-    // Send to API
     try {
       await fetch('/api/requests', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           id: requestId, 
-          // If status is 'New', flip it to 'Scheduled' automatically when assigned
           status: 'Scheduled', 
           assignedTo: newStaffId 
         }),
@@ -53,7 +54,6 @@ export default function AdminTable({ initialRequests = [] }) {
     }
   }
 
-  // 4. Handle Status "Approve" (Manual Button)
   async function handleStatusUpdate(id, newStatus) {
     setRequests(current => 
       current.map(req => req.id === id ? { ...req, status: newStatus } : req)
@@ -100,33 +100,24 @@ export default function AdminTable({ initialRequests = [] }) {
                   {req.requestedBy}
                 </td>
 
-                {/* ALWAYS VISIBLE DROPDOWN */}
+                {/* MVP FIX: SHOW ALL STAFF (No Filtering) */}
                 <td className="p-4">
                   <select 
-                      className="p-2 border rounded text-sm bg-white w-48 focus:ring-2 focus:ring-blue-500 outline-none"
-                      value={getStaffIdByName(req.assignedToName)}
-                      onChange={(e) => handleAssign(req.id, e.target.value)}
-                    >
-                      <option value="">Unassigned</option>
-                      {staffList
-                        .filter(staff => {
-                           if (staff.role === 'Admin' || staff.role === 'Moderator') return true;
-                           
-                           // Debug Log (Open your browser Console F12 to see this)
-                           // console.log(`Checking ${staff.email}:`, staff.sites, "vs Request:", req.location);
-                           
-                           return staff.sites && staff.sites.includes(req.location);
-                        })
-                        .map(staff => (
-                          <option key={staff.id} value={staff.id}>
-                            {staff.email}
-                          </option>
-                      ))}
-                    </select>
+                    className="p-2 border rounded text-sm bg-white w-48 focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={getStaffIdByName(req.assignedToName)}
+                    onChange={(e) => handleAssign(req.id, e.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {staffList.map(staff => (
+                      <option key={staff.id} value={staff.id}>
+                        {/* Show Email (and Role if you want clarification) */}
+                        {staff.email} {staff.role === 'Admin' ? '(Admin)' : ''}
+                      </option>
+                    ))}
+                  </select>
                 </td>
 
                 <td className="p-4">
-                   {/* If it's New, show Approve Button. If Scheduled/Done, show Badge */}
                    {req.status === 'New Request' ? (
                      <button 
                        onClick={() => handleStatusUpdate(req.id, 'Scheduled')}
