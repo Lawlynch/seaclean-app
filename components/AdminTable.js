@@ -13,13 +13,15 @@ export default function AdminTable({ initialRequests = [] }) {
 
     // 2. Send to API
     try {
-      await fetch('/api/requests/route', { // Ensure path matches your folder structure
+      // FIXED: Removed "/route" from the end of the URL
+      await fetch('/api/requests', { 
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
       });
     } catch (error) {
       console.error('Update failed:', error);
+      alert("Failed to save change");
     }
   }
 

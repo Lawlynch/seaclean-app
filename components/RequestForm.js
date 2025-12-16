@@ -2,24 +2,38 @@
 
 import { useState, useEffect } from 'react';
 
-export default function RequestForm() {
+// Accept 'user' as a prop
+export default function RequestForm({ user }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [sites, setSites] = useState([]); // Store the list of sites here
+  const [sites, setSites] = useState([]);
 
-  // 1. Fetch the Sites from Airtable when the page loads
   useEffect(() => {
     async function fetchSites() {
       try {
         const res = await fetch('/api/sites');
         const data = await res.json();
-        if (data.sites) setSites(data.sites);
+        
+        if (data.sites) {
+          // FILTER: Only keep sites that match the IDs in user.allowedSites
+          // If the user has NO restricted sites (admin?), show all.
+          // Assuming 'user.allowedSites' is an array of IDs like ['rec123', 'rec456']
+          
+          if (user.allowedSites && user.allowedSites.length > 0) {
+            const mySites = data.sites.filter(site => user.allowedSites.includes(site.id));
+            setSites(mySites);
+          } else {
+            // Fallback: If no specific sites assigned, maybe show none or all? 
+            // For safety, let's show only assigned ones. If empty, show empty.
+            setSites([]); 
+          }
+        }
       } catch (error) {
         console.error("Could not load sites", error);
       }
     }
     fetchSites();
-  }, []);
+  }, [user]); // Re-run if user changes
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -27,10 +41,11 @@ export default function RequestForm() {
 
     const formData = {
       serviceType: e.target.serviceType.value,
-      location: e.target.location.value, // This will now send the Site Name
+      location: e.target.location.value,
       priority: e.target.priority.value,
       description: e.target.description.value,
       date: e.target.date.value,
+      userId: user.id // Send the real User ID now!
     };
 
     try {
@@ -41,9 +56,9 @@ export default function RequestForm() {
       });
 
       if (res.ok) setSuccess(true);
-      else alert("Error submitting request");
+      else alert("Error submitting request.");
     } catch (err) {
-      alert("Network error");
+      alert("Network error.");
     }
     
     setLoading(false);
@@ -52,7 +67,7 @@ export default function RequestForm() {
   if (success) return (
     <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center text-green-800">
       <h3 className="text-xl font-bold">Request Sent!</h3>
-      <p className="mt-2">Head Office has been notified.</p>
+      <p className="mt-2">Thank you, {user.name}</p>
       <button onClick={() => setSuccess(false)} className="mt-4 underline">New Request</button>
     </div>
   );
@@ -61,11 +76,11 @@ export default function RequestForm() {
     <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow border border-gray-200">
       <h2 className="text-2xl font-bold text-blue-900">Request Service</h2>
       
-      {/* UPDATED SERVICE TYPES TO MATCH YOUR SCREENSHOT */}
+      {/* Service Type Dropdown */}
       <div>
         <label className="block text-sm font-medium mb-1">Service Type</label>
-        <select name="serviceType" className="w-full p-2 border rounded bg-white" required>
-          <option value="" disabled selected>Select a service...</option>
+        <select name="serviceType" className="w-full p-2 border rounded bg-white" required defaultValue="">
+          <option value="" disabled>Select a service...</option>
           <option value="Cleaning">Cleaning</option>
           <option value="Maintenance">Maintenance</option>
           <option value="Supplies">Supplies</option>
@@ -82,21 +97,22 @@ export default function RequestForm() {
         </select>
       </div>
 
-      {/* NEW DYNAMIC LOCATION DROPDOWN */}
+      {/* Location Dropdown - FILTERED BY USER */}
       <div>
         <label className="block text-sm font-medium mb-1">Location / Site</label>
         {sites.length > 0 ? (
-          <select name="location" className="w-full p-2 border rounded bg-white" required>
-            <option value="" disabled selected>Select a site...</option>
+          <select name="location" className="w-full p-2 border rounded bg-white" required defaultValue="">
+            <option value="" disabled>Select a site...</option>
             {sites.map(site => (
-              <option key={site.id} value={site.name}>
+              <option key={site.id} value={site.id}>
                 {site.name}
               </option>
             ))}
           </select>
         ) : (
-          // Fallback to text input if sites fail to load
-          <input name="location" type="text" className="w-full p-2 border rounded" placeholder="Loading sites..." required />
+          <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded">
+            No approved sites found for your account. Please contact support.
+          </div>
         )}
       </div>
 
@@ -106,10 +122,12 @@ export default function RequestForm() {
           <input name="date" type="date" className="w-full p-2 border rounded" required />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Priority</label>
-          <select name="priority" className="w-full p-2 border rounded bg-white">
-            <option>Normal</option>
-            <option>High</option>
+          <label className="block text-sm font-medium mb-1">Urgency</label>
+          <select name="priority" className="w-full p-2 border rounded bg-white" defaultValue="Normal">
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
           </select>
         </div>
       </div>
@@ -119,7 +137,7 @@ export default function RequestForm() {
         <textarea name="description" rows="3" className="w-full p-2 border rounded" placeholder="Details..."></textarea>
       </div>
 
-      <button disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition-colors">
+      <button disabled={loading || sites.length === 0} className="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 transition-colors disabled:opacity-50">
         {loading ? 'Sending...' : 'Submit Request'}
       </button>
     </form>
