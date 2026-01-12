@@ -36,9 +36,10 @@ async function getData() {
         // IMPORTANT: We get the Raw ID (rec...) so the dropdown can select the right user
         requestedById: Array.isArray(fields['Requested By']) ? fields['Requested By'][0] : null,
         
-        assignedToName: Array.isArray(fields['Assigned Staff']) ? fields['Assigned Staff'][0] : (fields['Assigned Staff'] || ''),
+     assignedToName: Array.isArray(fields['Assigned Staff']) ? fields['Assigned Staff'][0] : (fields['Assigned Staff'] || ''),
         clientApproval: fields['Client Approval'] || 'Pending',
-        quotePrice: fields['Quote Price'] || ''
+        quotePrice: fields['Quote Price'] || '',
+        quotationDescription: fields['Quotation Description'] || '' // <--- ADD THIS LINE
       };
     });
 
