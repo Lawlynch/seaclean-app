@@ -1,23 +1,57 @@
-import { NextResponse } from 'next/server';
 import { base } from '@/lib/airtable';
+import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function PUT(request) {
   try {
-    const records = await base('Users').select({
-      view: 'Grid view'
-    }).all();
+    const body = await request.json();
+    const { id, ...updates } = body;
 
-    // STRICT FILTER: Only return users where Role is EXACTLY 'Staff'
-    const staff = records
-      .filter(r => r.fields['Role'] === 'Staff') 
-      .map(r => ({
-        id: r.id,
-        name: r.fields['Email'], 
-        role: r.fields['Role']
-      }));
+    // 1. Validate we have an ID
+    if (!id) {
+      return NextResponse.json({ error: 'Missing Record ID' }, { status: 400 });
+    }
 
-    return NextResponse.json({ staff });
+    // 2. Prepare the fields for Airtable
+    const airtableFields = {};
+
+    // --- HANDLE STAFF ASSIGNMENT ---
+    if (updates.assignedStaff) {
+      // Airtable Linked Records MUST be an array of IDs: ['rec123...']
+      airtableFields['Assigned Staff'] = [updates.assignedStaff];
+    }
+
+    // --- HANDLE STATUS ---
+    if (updates.status) {
+      airtableFields['Status'] = updates.status;
+    }
+
+    // --- HANDLE QUOTE PRICE ---
+    if (updates.quotePrice !== undefined) {
+      // Parse float to ensure it's a number, default to 0 if invalid
+      const price = parseFloat(updates.quotePrice);
+      airtableFields['Quote Price'] = isNaN(price) ? 0 : price;
+    }
+
+    // --- HANDLE DESCRIPTION ---
+    if (updates.quotationDescription !== undefined) {
+      airtableFields['Quotation Description'] = updates.quotationDescription;
+    }
+
+    // 3. Update Airtable
+    const record = await base('Service Requests').update([
+      {
+        id: id,
+        fields: airtableFields
+      }
+    ]);
+
+    return NextResponse.json({ success: true, record });
+
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch staff' }, { status: 500 });
+    console.error('Airtable Update Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update Airtable', details: error.message },
+      { status: 500 }
+    );
   }
 }
